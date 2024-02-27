@@ -1,0 +1,8 @@
+
+  Andrea Tosatto has contributed to the implementation of the deadlock
+  and lock freedom analyses
+  
+  Michele Castrovilli has profiled Hypha and found two major performance
+  bottlenecks, namely the pretty printing of (large) processes and a function
+  for collecting integer variables from constraint sets.
+

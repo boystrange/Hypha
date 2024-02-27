@@ -1,0 +1,18 @@
+
+  *pair1?(x,r).r!(x,x)
+| *pair2?(x,r).r!(x,x)
+| *pair3?(x,r).r!(x,x)
+| *pair4?(x,r).r!(x,x)
+| *pair5?(x,r).r!(x,x)
+| *pair6?(x,r).r!(x,x)
+| *pair7?(x,r).r!(x,x)
+| *pair8?(x,r).r!(x,x)
+| pair1!(3,c1)
+| c1?x.pair2!(x,c2)
+| c2?x.pair3!(x,c3)
+| c3?x.pair4!(x,c4)
+| c4?x.pair5!(x,c5)
+| c5?x.pair6!(x,c6)
+| c6?x.pair7!(x,c7)
+| c7?x.pair8!(x,c8)
+

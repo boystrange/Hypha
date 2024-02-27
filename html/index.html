@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>
+      Hypha - Type Reconstruction for the Linear π-Calculus
+    </title>
+    <meta charset="utf-8"/>
+    <link href="hypha.css" rel="stylesheet" type="text/css"/>
+  </head>
+  <body class="fixed">
+    <div class="content">
+      <h1>Hypha - Type Reconstruction for the Linear π-Calculus</h1>
+      <p>
+	Hypha is a proof of concept implementation of the type
+	reconstruction algorithm described
+	in <a href="http://www.di.unito.it/~padovani/Papers/LinearReconstructionFull.pdf">Type
+	Reconstruction for the Linear π-Calculus with Composite and
+	Equi-Recursive Types</a>. It is implemented in Haskell, comes
+	with the full source code (see
+	the <a href="#download">download</a> section below) and a
+	bunch of examples.
+      </p>
+      <ul>
+	<li>Release <a href="#history">history</a></li>
+	<li><a href="#download">Download</a> the source code</li>
+	<li>Have a look at the <a href="#syntax">syntax</a> of
+	  processes accepted by Hypha</li>
+	<li>Check out <a href="#references">some references</a> on the
+	  linear π-Calculus</li>
+      </ul>
+
+      <h4 id="history">History</h4>
+      <ul>
+	<li>
+	  4 Jan 2016: released version 0.6 with performance improvements.
+	</li>
+	<li>
+	  10 Nov 2015: profiling has revealed two major performance
+	  bottlenecks in the pretty printing of large processes and
+	  during deadlock freedom analysis. Both have been
+	  successfully addressed.
+	</li>
+	<li>
+	  6 Dec 2014: first release with support for deadlock and lock
+	  freedom analyses.
+	</li>
+	<li>
+	  15 Sep 2014: implemented decompilation of linear types into session
+	  types.  Almost ready to release deadlock and lock analysis, but the
+	  code has been commented out and omitted from this release.
+	</li>
+	<li>
+	  13 Aug 2014: the internals of Hypha have been completely
+	  reworked. Hypha now implements an efficient use resolution
+	  algorithm, disjoint sums have been replaced by variant
+	  types, and the syntax of processes has been revised. Lots of
+	  new interesting examples can be typed!
+	</li>
+	<li>29 Nov 2013: added support for <em class="kw">fst</em> and
+	  <em class="kw">snd</em> operators as suggested
+	  by one of the <a href="http://www.etaps.org/index.php/2014/fossacs">FoSSaCS</a>
+	  reviewers; generalized syntax for sends and receives, now the
+	  subject can be an arbitrary expression.
+	</li>
+	<li>30 Aug 2013: initial release.</li>
+      </ul>
+
+      <h4 id="download">Download</h4>
+      <p>
+	The source code of Hypha can be downloaded at the links
+	below. For versions up to (and including) 0.4, you need GHC,
+	Alex and Happy to compile the tool. The easiset way to get
+	them all at once is to install
+	the <a href="http://www.haskell.org/platform/">Haskell
+	Platform</a>. In addition, you must install the Haskell
+	packages <tt>base-unicode-symbols</tt>, <tt>containers-unicode-symbols</tt>,
+	and <tt>multiset</tt>.  A Makefile is provided.
+      </p>
+      <p>
+	Starting from version 0.5, you also
+	need <a href="https://www.gnu.org/software/glpk/">GLPK</a> and
+	the corresponding Haskell binding <tt>glpk-hs</tt>. Work is in
+	progress to make this dependency optional.
+      </p>
+      <ul>
+	<li>
+	  hypha 0.6 [<a href="hypha-0.6.tar.gz">.tar.gz</a>]
+	</li>
+	<li>
+	  hypha 0.5 [<a href="hypha-0.5.tar.gz">.tar.gz</a>]
+	</li>
+	<li>
+	  hypha 0.4 [<a href="hypha-0.4.tar.gz">.tar.gz</a>]
+	</li>
+	<li>
+	  hypha 0.3 [<a href="hypha-0.3.tar.gz">.tar.gz</a>]
+	</li>
+	<li>
+	  hypha 0.2 [<a href="hypha-0.2.tar.gz">.tar.gz</a>]
+	</li>
+	<li>
+	  hypha 0.1 [<a href="hypha-0.1.tar.gz">.tar.gz</a>]
+	</li>
+      </ul>
+
+      <h4 id="syntax">Examples</h4>
+
+      <p>
+	Below are three processes that visit a binary tree where each
+	node contains a channel: <em class="t">take</em> sends a
+	message on the channel found on any node that is reachable
+	through an <em>even</em> number of right branches from the
+	root of the tree; <em class="t">skip</em> sends a message on
+	the channel found on any node that is reachable through
+	an <em>odd</em> number of right branches from the root of the
+	tree; overall,
+	<em class="t">all</em> sends a message on every channel in the
+	tree.
+      </p>
+
+      <div class="syntax">  *all?t. { take!t | skip!t }
+| *<em class="kw">case</em> take? <em class="kw">of</em> { Leaf        ⇒ {}
+                  ; Node(c,l,r) ⇒ c!3 | take!l | skip!r }
+| *<em class="kw">case</em> skip? <em class="kw">of</em> { Leaf        ⇒ {}
+                  ; Node(c,l,r) ⇒ skip!l | take!r }
+| all!tree</div>
+
+      <p>The types inferred by Hypha reflect the behavior of the three
+      processes:</p>
+
+      <div class="syntax">all  : {ω,1}[μα.(Leaf ⊕ Node {0,1}[Int] × α × α)]
+take : {ω,ω}[μα.(Leaf ⊕ Node {0,1}[Int] × α × μβ.(Leaf ⊕ Node {0,0}[Int] × β × α))]
+skip : {ω,ω}[μα.(Leaf ⊕ Node {0,0}[Int] × α × μβ.(Leaf ⊕ Node {0,1}[Int] × β × α))]
+tree : μα.(Leaf ⊕ Node {0,1}[Int] × α × α)</div>
+
+      <p>
+	Next is a process that models a server accepting requests for various
+	mathematical operations. The server is modeled using the
+	continuation-passing style that is implicit in session-based models.
+      </p>
+
+      <div class="syntax">  *server?s.
+   <em class="kw">case</em> s? <em class="kw">of</em>
+   { Quit    ⇒ {}
+   ; Plus c1 ⇒ c1?(x,c2).c2?(y,c3).<em class="kw">new</em> c4 <em class="kw">in</em> { c3!(x + y, c4) | server!c4 }
+   ; Eq c1   ⇒ c1?(x:Int,c2).c2?(y,c3).<em class="kw">new</em> c4 <em class="kw">in</em> { c3!(x = y, c4) | server!c4 }
+   ; Neg c1  ⇒ c1?(x,c2).<em class="kw">new</em> c3 <em class="kw">in</em> { c2!(0 - x, c3) | server!c3 } }</div>
+
+      <p>
+	Below is the type of <tt>server</tt> inferred by Hypha when using
+	the <tt>-s</tt> option, which activates the decompilation of linear
+	types into session types:
+      </p>
+
+      <div class="syntax">server : {ω,ω}[μα.?{Eq  : ?[Int].?[Int].![Bool].α,
+                     Neg : ?[Int].![Int].α,
+                     Plus: ?[Int].?[Int].![Int].α,
+                     Quit: end}]</div>
+
+      <p>
+	Since version 0.5 Hypha is capable of performing deadlock and
+	lock freedom analyses as described in the
+	paper <a href="http://hal.archives-ouvertes.fr/hal-00932356v2/document">Deadlock
+	and Lock Freedom in the Linear π-Calculus</a>. Below is the
+	result of Hypha's lock freedom analysis on the full duplex
+	communication example <tt>full_duplex.hy</tt> included in the
+	source archive. The numbers in square brackets respectively
+	denote the level and the tickets associated with channels. The
+	existence of these annotations means that the program is lock
+	free. Note the use of polymorphic recursion in the invocations
+	of <tt>node</tt>.
+      </p>
+      <div class="syntax">{ { *node?(%val).
+     <em class="kw">split</em> %val <em class="kw">as</em> %1 : [0,0], %2 : [0,0] <em class="kw">in</em>
+     <em class="kw">let</em> x : [0,0] = %1 : [0,0] <em class="kw">in</em>
+     <em class="kw">let</em> y : [0,0] = %2 : [0,0] <em class="kw">in</em>
+     <em class="kw">new</em> a : [1,3] <em class="kw">in</em>
+     { x : [0,0]!a : [1,2]
+     | y : [0,0]?(z : [1,1]).node!(a : [1,1] , z : [1,1])
+     }
+  | node!(e : [0,1] , f : [0,1])
+  }
+| node!(f : [0,1] , e : [0,1])
+}</div>
+      
+      <h4 id="syntax">Syntax</h4>
+
+      <p>
+	Below is the EBNF grammar describing the syntax of processes
+	accepted by Hypha. The symbols ⇒ ≤ ≥ ≠ × ∧ ∨ ¬ can also be entered as 
+	<em class="t">=&gt;</em> 
+	<em class="t">&lt;=</em> 
+	<em class="t">&gt;=</em> 
+	<em class="t">&lt;&gt;</em> 
+	<em class="t">*</em> 
+	/\
+	\/ 
+	<em class="kw">not</em> 
+	respectively.
+      </p>
+
+
+      <table class="syntax">
+	<tr>
+	  <td class="right"><em class="nt">Process</em></td>
+	  <td>::=</td>
+	  <td><em class="nt">Expression</em>!<span class="meta">[</span><em class="nt">Expression</em><span class="meta">]</span>
+	  <span class="meta">[</span>. <em class="nt">Process</em><span class="meta">]</span></td>
+	  <td class="legend">output</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="nt">Expression</em>?<span class="meta">[</span><em class="nt">Pattern</em><span class="meta">]</span>
+	  <span class="meta">[</span>. <em class="nt">Process</em><span class="meta">]</span></td>
+	  <td class="legend">input</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="kw">let</em> <em class="nt">Pattern</em> =
+	    <em class="nt">Expression</em> <em class="kw">in</em> <em class="nt">Process</em>
+	  </td>
+	  <td class="legend">local binding</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td>
+	    <em class="kw">def</em>
+	    <em class="nt">Definition</em>
+	    <span class="meta">[</span><em class="kw">and</em> 
+	    <em class="nt">Definition</em><span class="meta">]<sup>*</sup>
+	    <em class="kw">in</em>
+	    <em class="nt">Process</em>
+	  </td>
+	  <td class="legend">definitions</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="kw">case</em> <em class="nt">Expression</em>
+	    <span class="meta">[</span>?<span class="meta">]</span>
+	    <em class="kw">of</em> { <em class="nt">Rule</em> <span class="meta">[</span>; <em class="nt">Rule</em><span class="meta">]<sup>*</sup></span> }
+	  </td>
+	  <td class="legend">pattern matching</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="kw">if</em> <em class="nt">Expression</em>
+	    <em class="kw">then</em> <em class="nt">Process</em>
+	    <em class="kw">else</em> <em class="nt">Process</em>
+	  </td>
+	  <td class="legend">conditional</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="nt">Process</em>
+	  | <em class="nt">Process</em>
+	  </td>
+	  <td class="legend">parallel composition</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="kw">new</em> <em class="t">var</em>
+	  <span class="meta">[</span>: <em class="nt">Type</em><span class="meta">]</span> <em class="kw">in</em>
+	    <em class="nt">Process</em>
+	  </td>
+	  <td class="legend">new channel</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td>{ <span class="meta">[</span><em class="nt">Process</em><span class="meta">]</span> }
+	  </td>
+	  <td class="legend">group</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td>*<em class="nt">Process</em>
+	  </td>
+	  <td class="legend">replication</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="nt">Definition</em></td>
+	  <td>::=</td>
+	  <td>
+	    <em class="t">var</em>?<span class="meta">[</span><em class="nt">Pattern</em><span class="meta">]</span>
+	    =
+	    <em class="nt">Process</em>
+	  </td>
+	  <td class="legend">persistent input</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="nt">Rule</em></td>
+	  <td>::=</td>
+	  <td>
+	    <em class="t">tag</em>
+	    <span class="meta">[</span><em class="nt">Pattern</em><span class="meta">]</span>
+	    ⇒
+	    <em class="nt">Process</em>
+	  </td>
+	  <td class="legend">match</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="nt">Pattern</em></td>
+	  <td>::=</td>
+	  <td>()</td>
+	  <td class="legend">unit</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td>_ <span class="meta">[</span>: <em class="nt">Type</em><span class="meta">]</span></td>
+	  <td class="legend">anonymous</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="t">var</em> <span class="meta">[</span>: <em class="nt">Type</em><span class="meta">]</span></td>
+	  <td class="legend">variable</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td>
+	    <em class="nt">Pattern</em>
+	    <em class="kw">as</em>
+	    <em class="t">var</em>
+	    <span class="meta">[</span>: <em class="nt">Type</em><span class="meta">]</span>
+	  </td>
+	  <td class="legend">ascription</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="nt">Pattern</em>, <em class="nt">Pattern</em></td>
+	  <td class="legend">pair</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td>(<em class="nt">Pattern</em>)</td>
+	  <td class="legend">group</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="nt">Expression</em></td>
+	  <td>::=</td>
+	  <td>()</td>
+	  <td class="legend">unit</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="t">n</em></td>
+	  <td class="legend">integer</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="kw">true</em></td>
+	  <td class="legend">boolean true</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="kw">false</em></td>
+	  <td class="legend">boolean false</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="t">var</em></td>
+	  <td class="legend">variable</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="t">unop</em>
+	    <em class="nt">Expression</em></td>
+	  <td class="legend">unary operator</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td><em class="nt">Expression</em> <em class="t">binop</em>
+	    <em class="nt">Expression</em></td>
+	  <td class="legend">binary operator</td>
+	</tr>
+	<tr>
+	  <td/>
+	  <td class="center">|</td>
+	  <td>(<em class="nt">Expression</em>)</td>
+	  <td class="legend">group</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="nt">Type</em></td>
+	  <td>::=</td>
+	  <td>
+	    <em class="kw">Unit</em> |
+	    <em class="kw">Bool</em> |
+	    <em class="kw">Int</em>
+	  </td>
+	  <td class="legend">basic types</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="t">binop</em></td>
+	  <td>::=</td>
+	  <td>
+	    ∧ |
+	    ∨ |
+	    &lt; |
+	    &gt; |
+	    ≤ |
+	    ≥ |
+	    = |
+	    ≠ |
+	    + |
+	    - |
+	    × |
+	    / |
+	    ,
+	  </td>
+	  <td class="legend">binary operators</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="t">unop</em></td>
+	  <td>::=</td>
+	  <td>
+	    <em class="t">tag</em> |
+	    <em class="t">¬</em> |
+	    <em class="kw">fst</em> |
+	    <em class="kw">snd</em>
+	  </td>
+	  <td class="legend">unary operators</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="t">var</em></td>
+	  <td>::=</td>
+	  <td><span class="meta"><span class="meta">[</span></span>a-z<span class="meta">]</span> <span class="meta">[</span>a-z 0-9 _ '<span class="meta">]<sup>*</sup></span></td>
+	  <td class="legend">variable</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="t">tag</em></td>
+	  <td>::=</td>
+	  <td><span class="meta">[</span>A-Z<span class="meta">]</span> <span class="meta">[</span>a-z 0-9 _ '<span class="meta">]<sup>*</sup></span></td>
+	  <td class="legend">tag</td>
+	</tr>
+	<tr>
+	  <td class="right"><em class="t">n</em></td>
+	  <td>::=</td>
+	  <td><span class="meta">[</span>0-9<span class="meta">]<sup>+</sup></span></td>
+	  <td class="legend">integer</td>
+	</tr>
+      </table>
+
+      <h4 id="references">References</h4>
+      <ul>
+	<li>Luca
+	Padovani, <a href="http://hal.archives-ouvertes.fr/hal-00932356v2/document">Deadlock
+	and Lock Freedom in the Linear π-Calculus</a>, in Proceedings
+	of CSL-LICS 2014.</li>
+	<li>Luca
+	    Padovani, <a href="http://www.di.unito.it/~padovani/Papers/LinearReconstructionFull.pdf">Type
+	    Reconstruction for the Linear π-Calculus with Composite
+	    and Equi-Recursive Types</a>, in Proceedings of FoSSaCS 2014.</li>
+	<li>Atsushi Igarashi, Naoki
+	    Kobayashi, <a href="http://dx.doi.org/10.1006/inco.2000.2872">Type
+	    Reconstruction for Linear π-Calculus with I/O
+	    Subtyping</a>, Information and Computation, 161(1):1-44,
+	    2000</li>
+	<li>Naoki Kobayashi, Benjamin C. Pierce, David
+	N. Turner, <a href="http://doi.acm.org/10.1145/330249.330251">Linearity
+	and the pi-calculus</a>, ACM Transactions on Programming
+	Languages and Systems, 21(5):914-947, ACM, 1999</li>
+      </ul>
+    </div>
+  </body>
+</html>
